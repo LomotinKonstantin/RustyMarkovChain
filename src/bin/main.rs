@@ -1,8 +1,19 @@
 use markov::{
     get_validate_args,
-    Config
+    Command,
+    fit, gen, DUMP_FILE,
 };
 
 fn main() {
-    let config = get_validate_args();
+    let command = get_validate_args();
+    match command {
+        Command::Fit(path) => {
+            let chain = fit(&path);
+            chain.dump(DUMP_FILE);
+        },
+        Command::Gen(max_len) => {
+            let word = gen(max_len);
+            println!("{}", word);
+        }
+    }
 }
