@@ -11,7 +11,8 @@ use crate::linalg::WeightedGraph;
 
 const F64_SIZE: usize = std::mem::size_of::<f64>();
 const U64_SIZE: usize = std::mem::size_of::<u64>();
-const TOP_PROBAS: f64 = 0.1;
+const TOP_PROBAS: f64 = 0.35;
+const CANNOT_START_FROM: &str = "'- ";
 
 pub struct TextMarkovChain {
     graph: WeightedGraph<char>,
@@ -63,27 +64,27 @@ impl TextMarkovChain {
             }
             self.graph.incr(&prev_char, &' ');
         }
-        // self.graph.normalize();
+        self.graph.normalize();
     }
 
-    pub fn gen(&self, len: usize) -> String {
+    pub fn gen(&self, min_len: usize) -> String {
         let all_chars = self.graph.get_vertices();
         let initial_char = loop {
             let c = **TextMarkovChain::choice(&all_chars);
-            if c != ' ' {
-                break c;
-            }
+            if !CANNOT_START_FROM.contains(c) { break c; }
         };
         let mut result = vec!(initial_char);
         let mut curr_char = initial_char;
-        for _ in 1..len {
+        loop {
             let probas = self.graph.get_weights_for(curr_char);
-            let next_char = **TextMarkovChain::choice_from_top(&all_chars, probas, TOP_PROBAS);
-            // let next_char = **TextMarkovChain::choice_with_proba(&all_chars, probas);
+            let is_dead_end = self.check_dead_end(probas, all_chars.as_slice());
+            let next_char = loop {
+                let c = **TextMarkovChain::choice_from_top(&all_chars, probas, TOP_PROBAS);
+                if c == ' ' && !is_dead_end && result.len() < min_len { continue; }
+                break c;
+            };
             // Space stands for the end of the word
-            if next_char == ' ' {
-                break;
-            }
+            if next_char == ' ' { break; }
             result.push(next_char);
             curr_char = next_char;
         }
@@ -136,6 +137,11 @@ impl TextMarkovChain {
         let n = (options.len() as f64 * top_percent) as usize;
         let (new_probas, new_options): (Vec<_>, Vec<&T>) = common[0..n].iter().cloned().unzip();
         TextMarkovChain::choice_with_proba::<&T>(new_options.as_slice(), &new_probas)
+    }
+
+    fn check_dead_end(&self, probas: &[f64], all_chars: &[&char]) -> bool {
+        let possible: Vec<_> = probas.iter().zip(all_chars).filter(|(proba, _)| **proba > 0.).collect();
+        possible.len() == 1 && **possible[0].1 == ' '
     }
 }
 

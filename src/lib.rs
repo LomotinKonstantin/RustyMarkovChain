@@ -28,10 +28,10 @@ pub fn get_validate_args() -> Command {
                                 .required(true)
                                 .help("path to the training file with one word per line")))
                 .subcommand(SubCommand::with_name("gen")
-                        .about("generate a word with specified max length")
-                        .arg(Arg::with_name("max_len")
+                        .about("generate a word with specified minimum length")
+                        .arg(Arg::with_name("min_len")
                             .required(true)
-                            .help("integer > 0, the maximum length of the generated word")))
+                            .help("integer > 0, the minimal length of the generated word")))
     .get_matches();
 
     match matches.subcommand() {
@@ -49,11 +49,11 @@ pub fn get_validate_args() -> Command {
         },
         // Prediction
         ("gen", Some(val_m)) => {
-            let max_len = val_m.value_of("max_len").unwrap().parse::<usize>().unwrap_or_else(|val| {
-                println!("Max len must be a positive int. Error: {}", val);
+            let min_len = val_m.value_of("min_len").unwrap().parse::<usize>().unwrap_or_else(|val| {
+                println!("Min len must be a positive int. Error: {}", val);
                 std::process::exit(0);
             });
-            Command::Gen(max_len)
+            Command::Gen(min_len)
         },
         (&_, _) => {
             println!("Invalid command. Check help");
@@ -80,9 +80,9 @@ pub fn fit(path: &str) -> TextMarkovChain {
     mc
 }
 
-pub fn gen(max_len: usize) -> String {
+pub fn gen(min_len: usize) -> String {
     let mc = TextMarkovChain::load(DUMP_FILE);
-    to_titlecase(&mc.gen(max_len))
+    to_titlecase(&mc.gen(min_len))
 }
 
 fn unique_chars(words: &[&str]) -> HashSet<char> {
