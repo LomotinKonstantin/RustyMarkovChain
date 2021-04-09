@@ -11,6 +11,7 @@ use crate::linalg::WeightedGraph;
 
 const F64_SIZE: usize = std::mem::size_of::<f64>();
 const U64_SIZE: usize = std::mem::size_of::<u64>();
+const TOP_PROBAS: f64 = 0.1;
 
 pub struct TextMarkovChain {
     graph: WeightedGraph<char>,
@@ -62,17 +63,23 @@ impl TextMarkovChain {
             }
             self.graph.incr(&prev_char, &' ');
         }
-        self.graph.normalize();
+        // self.graph.normalize();
     }
 
     pub fn gen(&self, len: usize) -> String {
         let all_chars = self.graph.get_vertices();
-        let initial_char = **TextMarkovChain::choice(&all_chars);
+        let initial_char = loop {
+            let c = **TextMarkovChain::choice(&all_chars);
+            if c != ' ' {
+                break c;
+            }
+        };
         let mut result = vec!(initial_char);
         let mut curr_char = initial_char;
         for _ in 1..len {
             let probas = self.graph.get_weights_for(curr_char);
-            let next_char = **TextMarkovChain::choice_with_proba(&all_chars, probas);
+            let next_char = **TextMarkovChain::choice_from_top(&all_chars, probas, TOP_PROBAS);
+            // let next_char = **TextMarkovChain::choice_with_proba(&all_chars, probas);
             // Space stands for the end of the word
             if next_char == ' ' {
                 break;
@@ -113,8 +120,46 @@ impl TextMarkovChain {
     }
 
     fn choice_with_proba<'a, T>(options: &'a [T], probas: &[f64]) -> &'a T {
+        assert_eq!(options.len(), probas.len());
         let mut rng = rand::thread_rng();
         let dist = WeightedIndex::new(probas).unwrap();
         &options[dist.sample(&mut rng)]
     }
+
+    fn choice_from_top<'a, T>(options: &'a [T], probas: &[f64], top_percent: f64) -> &'a T 
+    where T: std::fmt::Debug
+    {
+        // Sorting
+        let mut common: Vec<(&f64, &T)> = probas.iter().zip(options).collect();
+        common.sort_by(|(p1, _), (p2, _)| p2.partial_cmp(p1).unwrap() );
+        // Calculating absolute number to choose from
+        let n = (options.len() as f64 * top_percent) as usize;
+        let (new_probas, new_options): (Vec<_>, Vec<&T>) = common[0..n].iter().cloned().unzip();
+        TextMarkovChain::choice_with_proba::<&T>(new_options.as_slice(), &new_probas)
+    }
+}
+
+#[cfg(test)]
+mod markov_chain_test {
+
+    use super::TextMarkovChain;
+
+    #[test]
+    fn fit_test() {
+        let data = [
+            "aa", "ar", "rc", "cr", "bo"
+        ];
+        let mut mc = TextMarkovChain::new(&['a', 'r', 'c', 'b', 'o', ' ']);
+        mc.fit(&data);
+        let expected = [
+            1f64 / 3., 1. / 3., 0., 0., 0., 1. / 3.,
+            0.,   0., 1. / 3., 0., 0., 2. /3.,
+            0.,   1. / 2., 0., 0., 0., 1. / 2.,
+            0.,   0., 0., 0., 1., 0.,
+            0.,   0., 0., 0., 0., 1.,
+            0.,   0., 0., 0., 0., 0.,
+        ];
+        assert_eq!(mc.graph.get_all_weights().as_slice(), expected);
+    }
+
 }

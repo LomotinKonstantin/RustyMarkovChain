@@ -37,9 +37,9 @@ impl<T> WeightedGraph<T> where T: Hash + Eq + Clone + Debug {
     }
 
     pub fn get_weights_for(&self, c: T) -> &[f64] {
-        let idx = *self.vertices.get(&c).unwrap();
+        let idx = self.vertices[&c];
         let n = self.n_vertices();
-        &self.weights[idx..idx+n]
+        &self.weights[n * idx .. n * idx + n]
     }
 
     pub fn n_vertices(&self) -> usize {
@@ -47,7 +47,10 @@ impl<T> WeightedGraph<T> where T: Hash + Eq + Clone + Debug {
     }
 
     pub fn get_vertices(&self) -> Vec<&T> {
-        self.vertices.keys().collect()
+        let mut pairs: Vec<_> = self.vertices.iter().collect();
+        pairs.sort_by(|(_, idx1), (_, idx2)| idx1.cmp(idx2) );
+        let (keys, _): (Vec<&T>, Vec<&usize>) = pairs.iter().cloned().unzip();
+        keys
     }
 
     pub fn get_all_weights(&self) -> &Vec<f64> {
@@ -75,8 +78,8 @@ impl<T> WeightedGraph<T> where T: Hash + Eq + Clone + Debug {
     }
 
     fn calc_abs_idx(&self, from: &T, to: &T) -> usize {
-        let idx_from = self.vertices.get(from).unwrap();
-        let idx_to = self.vertices.get(to).unwrap();
+        let idx_from = self.vertices[from];
+        let idx_to = self.vertices[to];
         
         let n = self.vertices.len();
         let abs_idx = n * idx_from + idx_to;
@@ -88,12 +91,12 @@ impl<T> WeightedGraph<T> where T: Hash + Eq + Clone + Debug {
 impl<T> std::fmt::Debug for WeightedGraph<T> 
 where T: Hash + Eq + Clone + Debug {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        let n = self.vertices.len();
-        for (c1, c1_idx) in &self.vertices {
-            for (c2, c2_idx) in &self.vertices {
-                let abs_idx = n * c1_idx + c2_idx;
-                writeln!(f, "[{}] {:?} -> {:?} = {}",self.vertices[&c1], c1, c2, self.weights[abs_idx])?;
-            }
+        let chars = self.get_vertices();
+        let n = chars.len();
+        writeln!(f, "\n   {:?}", chars)?;
+        for (from, c) in chars.iter().enumerate() {
+            let slice = &self.weights[n * from .. n * from + n];
+            writeln!(f, "{:?} {:?}", c, slice)?;
         }
         Ok(())
     }
