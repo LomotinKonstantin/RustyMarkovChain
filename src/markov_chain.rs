@@ -43,9 +43,9 @@ impl TextMarkovChain {
         let n_weights = vertices.len();
         let n_weights = n_weights * n_weights;
         let mut weights = Vec::with_capacity(n_weights);
-        for _ in (0..n_weights * F64_SIZE).step_by(F64_SIZE) {
+        for _ in (0..n_weights * U64_SIZE).step_by(U64_SIZE) {
             reader.read_exact(&mut weight_buf).unwrap();
-            let w = f64::from_le_bytes(weight_buf);
+            let w = u64::from_le_bytes(weight_buf);
             weights.push(w);
         }
         graph.set_all_weights(weights);
@@ -64,7 +64,6 @@ impl TextMarkovChain {
             }
             self.graph.incr(&prev_char, &' ');
         }
-        self.graph.normalize();
     }
 
     pub fn gen(&self, min_len: usize) -> String {
@@ -120,18 +119,18 @@ impl TextMarkovChain {
         &options[idx]
     }
 
-    fn choice_with_proba<'a, T>(options: &'a [T], probas: &[f64]) -> &'a T {
+    fn choice_with_proba<'a, T>(options: &'a [T], probas: &[u64]) -> &'a T {
         assert_eq!(options.len(), probas.len());
         let mut rng = rand::thread_rng();
         let dist = WeightedIndex::new(probas).unwrap();
         &options[dist.sample(&mut rng)]
     }
 
-    fn choice_from_top<'a, T>(options: &'a [T], probas: &[f64], top_percent: f64) -> &'a T 
+    fn choice_from_top<'a, T>(options: &'a [T], probas: &[u64], top_percent: f64) -> &'a T 
     where T: std::fmt::Debug
     {
         // Sorting
-        let mut common: Vec<(&f64, &T)> = probas.iter().zip(options).collect();
+        let mut common: Vec<(&u64, &T)> = probas.iter().zip(options).collect();
         common.sort_by(|(p1, _), (p2, _)| p2.partial_cmp(p1).unwrap() );
         // Calculating absolute number to choose from
         let n = (options.len() as f64 * top_percent) as usize;
@@ -139,8 +138,8 @@ impl TextMarkovChain {
         TextMarkovChain::choice_with_proba::<&T>(new_options.as_slice(), &new_probas)
     }
 
-    fn check_dead_end(&self, probas: &[f64], all_chars: &[&char]) -> bool {
-        let possible: Vec<_> = probas.iter().zip(all_chars).filter(|(proba, _)| **proba > 0.).collect();
+    fn check_dead_end(&self, probas: &[u64], all_chars: &[&char]) -> bool {
+        let possible: Vec<_> = probas.iter().zip(all_chars).filter(|(proba, _)| **proba > 0).collect();
         possible.len() == 1 && **possible[0].1 == ' '
     }
 }
