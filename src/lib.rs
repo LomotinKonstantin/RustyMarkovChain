@@ -1,6 +1,5 @@
 use std::path::Path;
 use std::fs;
-use std::collections::HashSet;
 
 extern crate clap;
 use clap::{Arg, App, SubCommand};
@@ -65,32 +64,12 @@ pub fn get_validate_args() -> Command {
 pub fn fit(path: &str) -> TextMarkovChain {
     let tr_data = fs::read_to_string(path).expect("Unable to read training file").to_lowercase();
     let tr_data: Vec<&str> = tr_data.split_whitespace().collect();
-    let mut char_set = unique_chars(&tr_data);
-    if !char_set.contains(&' ') {
-        char_set.insert(' ');
-    }
-    let unique_chars: Vec<char> = char_set.into_iter().collect();
-    if let Some(item) = tr_data.iter().find(|x| x.contains(' ')) {
-        println!("Words from training data cannot contain spaces! (Here ->{})", item);
-        std::process::exit(0);
-    }
-    let mut mc = TextMarkovChain::new(&unique_chars);
-    mc.fit(&tr_data);
-    println!("The trained chain is saved to {}", DUMP_FILE);
-    mc
+    TextMarkovChain::fit(&tr_data)
 }
 
 pub fn gen(min_len: usize) -> String {
     let mc = TextMarkovChain::load(DUMP_FILE);
     to_titlecase(&mc.gen(min_len))
-}
-
-fn unique_chars(words: &[&str]) -> HashSet<char> {
-    let mut cntr = HashSet::new();
-    for w in words.iter() {
-        cntr.extend(w.chars());
-    };
-    cntr
 }
 
 fn to_titlecase(s: &str) -> String {

@@ -10,6 +10,7 @@ fn main() {
         Command::Fit(path) => {
             let chain = fit(&path);
             chain.dump(DUMP_FILE);
+            println!("The chain is saved to {}", DUMP_FILE);
         },
         Command::Gen(max_len) => {
             let word = gen(max_len);

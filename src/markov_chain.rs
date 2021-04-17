@@ -1,6 +1,7 @@
 use std::iter::FromIterator;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write, Read};
+use std::collections::HashSet;
 
 use rand::{
     distributions::{WeightedIndex, Distribution},
@@ -54,16 +55,24 @@ impl TextMarkovChain {
         }
     }   
 
-    pub fn fit(&mut self, data: &[&str]) {
+    pub fn fit(data: &[&str]) -> Self {
+        let mut char_set = TextMarkovChain::unique_chars(&data);
+        if !char_set.contains(&' ') {
+            char_set.insert(' ');
+        }
+        let mut unique_chars: Vec<char> = char_set.into_iter().collect();
+        unique_chars.sort_unstable();
+        let mut mc = TextMarkovChain::new(&unique_chars);
         for item in data {
             let mut chars = item.chars();
             let mut prev_char = chars.next().unwrap();
             for curr_char in chars {
-                self.graph.incr(&prev_char, &curr_char);
+                mc.graph.incr(&prev_char, &curr_char);
                 prev_char = curr_char;
             }
-            self.graph.incr(&prev_char, &' ');
+            mc.graph.incr(&prev_char, &' ');
         }
+        mc
     }
 
     pub fn gen(&self, min_len: usize) -> String {
@@ -142,6 +151,14 @@ impl TextMarkovChain {
         let possible: Vec<_> = probas.iter().zip(all_chars).filter(|(proba, _)| **proba > 0).collect();
         possible.len() == 1 && **possible[0].1 == ' '
     }
+
+    fn unique_chars(words: &[&str]) -> HashSet<char> {
+        let mut cntr = HashSet::new();
+        for w in words.iter() {
+            cntr.extend(w.chars());
+        };
+        cntr
+    }
 }
 
 #[cfg(test)]
@@ -154,15 +171,14 @@ mod markov_chain_test {
         let data = [
             "aa", "ar", "rc", "cr", "bo"
         ];
-        let mut mc = TextMarkovChain::new(&['a', 'r', 'c', 'b', 'o', ' ']);
-        mc.fit(&data);
+        let mc = TextMarkovChain::fit(&data);
         let expected = [
-            1f64 / 3., 1. / 3., 0., 0., 0., 1. / 3.,
-            0.,   0., 1. / 3., 0., 0., 2. /3.,
-            0.,   1. / 2., 0., 0., 0., 1. / 2.,
-            0.,   0., 0., 0., 1., 0.,
-            0.,   0., 0., 0., 0., 1.,
-            0.,   0., 0., 0., 0., 0.,
+            0, 0, 0, 0, 0, 0, 
+            1, 1, 0, 0, 0, 1, 
+            0, 0, 0, 0, 1, 0, 
+            1, 0, 0, 0, 0, 1, 
+            1, 0, 0, 0, 0, 0, 
+            2, 0, 0, 1, 0, 0
         ];
         assert_eq!(mc.graph.get_all_weights().as_slice(), expected);
     }
