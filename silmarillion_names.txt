@@ -35,14 +35,13 @@ Beren
 Bór
 Borlach
 Borlad
-Boromir (Lord of Ladros)
+Boromir
 Boron
 Borthand
 Brandir
 Bregolas
 Bregor
 Brodda
-Captain of Morgoth
 Caranthir
 Carcharoth
 Celeborn
@@ -54,14 +53,13 @@ Curufin
 Daeron
 Dagnir
 Dairuin
-Denethor (son of Lenwë)
+Denethor
 Dior
 Dorlas
 Draugluin
 Durin I
 Eärendil
-Eärendur (King of Arnor)
-Eärendur (Lord of Andúnië)
+Eärendur
 Eärnil II
 Eärnur
 Eärwen
@@ -153,7 +151,6 @@ Marach
 Mardil
 Melian
 Meneldil
-Messengers of the Valar
 Mîm
 Míriel
 Morgoth
@@ -164,7 +161,7 @@ Nerdanel
 Nessa
 Nienna
 Nienor
-Nimloth (elf of Doriath)
+Nimloth
 Ohtar
 Olwë
 Orodreth
@@ -175,7 +172,7 @@ Radhruin
 Ragnor
 Rían
 Rochallor
-Rúmil (elf of Tirion)
+Rúmil
 Saeros
 Salmar
 Saruman

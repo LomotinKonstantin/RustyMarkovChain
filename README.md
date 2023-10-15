@@ -3,12 +3,12 @@ A simple Markov chain for word generation.
 
 Fitting:
 ```bash
-$ main.exe fit one_word_per_line_list.txt
+$ markov_chain.exe fit -t one_word_per_line_list.txt -w weights.bin
 ```
 
-After fitting, the app creates a `weigths.bin` file with the trained chain.
+After fitting, a `weigths.bin` file with the trained chain will appear.
 
-Generating a word with minimal length 10 (with a `weigths.bin` file in the same directory):
+Generating 10 words (assuming the `weigths.bin` file is in the same directory):
 ```bash
-$ main.exe gen 10
+$ markov_chain.exe generate -w weights.bin -n 10
 ```
